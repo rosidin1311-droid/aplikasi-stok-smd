@@ -1,6 +1,12 @@
+import subprocess
+import sys
+
+# Memastikan gspread terinstall
+subprocess.check_call([sys.executable, "-m", "pip", "install", "gspread", "pandas"])
+
 import streamlit as st
 import pandas as pd
-from streamlit_gsheets import GSheetsConnection
+import gspread
 
 # Konfigurasi Halaman
 st.set_page_config(page_title="Data Stok SMD", layout="wide")
