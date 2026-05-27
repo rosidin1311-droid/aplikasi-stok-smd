@@ -1,2 +1,1 @@
-streamlit
 streamlit-gsheets==0.1.1
