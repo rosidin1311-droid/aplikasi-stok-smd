@@ -2,107 +2,64 @@ import streamlit as st
 import pandas as pd
 import datetime
 
-# --- 1. KONFIGURASI TEMA CORDUROY ---
-st.set_page_config(page_title="Data Stok SMD & IKEA", page_icon="🏭", layout="wide")
-st.markdown("""
-    <style>
-    .stApp { background-color: #fdfaf6; color: #4b3d33; }
-    h1, h2, h3 { color: #8b5e3c !important; }
-    div.stButton > button { background-color: #d2b48c; color: white; border: none; border-radius: 6px; font-weight: bold; }
-    [data-testid="stSidebar"] { background-color: #f5e9d9; }
-    </style>
-    """, unsafe_allow_html=True)
+# --- KONFIGURASI TEMA ---
+st.set_page_config(page_title="Data Stok SMD", page_icon="🏭", layout="wide")
 
-# --- 2. URL CSV (PASTIKAN SUDAH PUBLISH TO WEB) ---
+# --- URL CSV ---
 URL_PROD = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?gid=0&single=true&output=csv"
 URL_DELIV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?gid=955087734&single=true&output=csv"
 URL_MASTER = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?gid=1449236361&single=true&output=csv"
 
-# --- 3. FUNGSI AMBIL DATA ---
 @st.cache_data(ttl=60)
 def load_data(url):
-    try:
-        # Menambahkan parameter agar lebih toleran terhadap format file
-        df = pd.read_csv(url, on_bad_lines='skip', engine='python')
-        df.columns = df.columns.str.strip()
-        return df
-    except Exception as e:
-        st.error(f"Terjadi kesalahan saat membaca CSV: {e}")
-        return pd.DataFrame() # Mengembalikan dataframe kosong agar aplikasi tidak mati
+    df = pd.read_csv(url)
+    df.columns = df.columns.str.strip()
+    return df
 
-# Ambil data
 df = load_data(URL_PROD)
 df_deliv = load_data(URL_DELIV)
 df_master = load_data(URL_MASTER)
 
-# Pastikan Tanggal urut terbaru
-if "Tanggal" in df.columns:
-    df["Tanggal"] = pd.to_datetime(df["Tanggal"])
-    df = df.sort_values(by="Tanggal", ascending=False)
-
-# --- 4. TAMPILAN APLIKASI ---
+# --- FUNGSI NAVIGASI ---
 st.title("🏭 APLIKASI DATA STOK SAMINDO")
 menu = st.sidebar.selectbox("Menu", ["🏭 Input Produksi", "📊 Monitoring WIP", "📦 Data Stok", "⚙️ Master Data"])
 
-# --- MENU MASTER DATA ---
+# --- MENU MASTER ---
 if menu == "⚙️ Master Data":
-    st.subheader("⚙️ Master Data")
-    st.dataframe(df_master, width=1000)
+    st.dataframe(df_master)
 
-# --- MENU INPUT PRODUKSI ---
+# --- MENU INPUT ---
 elif menu == "🏭 Input Produksi":
-    st.subheader("🏭 Form Input")
+    # Mengambil unik data dari kolom 1 (Kategori) dan kolom 2 (Nama)
+    kategori_col = df_master.columns[0]
+    data_col = df_master.columns[1]
     
-    # Memastikan data master tidak kosong sebelum dipakai
-    if df_master.empty:
-        st.error("Data Master belum terbaca. Pastikan Google Sheet Master terisi.")
-    else:
-        # Mengambil daftar dari kolom berdasarkan index (Kolom 0: Kategori, Kolom 1: Nama Data)
-        list_model = df_master[df_master.iloc[:,0] == "Model"].iloc[:,1].unique().tolist()
-        list_proses = df_master[df_master.iloc[:,0] == "Proses"].iloc[:,1].unique().tolist()
-        
-        # Tambahkan kondisi jika list kosong
-        if not list_model: list_model = ["Data tidak ditemukan"]
-        if not list_proses: list_proses = ["Data tidak ditemukan"]
+    models = df_master[df_master[kategori_col] == "Model"][data_col].unique().tolist()
+    proses = df_master[df_master[kategori_col] == "Proses"][data_col].unique().tolist()
+    
+    with st.form("input"):
+        m = st.selectbox("Model", models)
+        p = st.selectbox("Proses", proses)
+        qty = st.number_input("Jumlah", 0)
+        if st.form_submit_button("Simpan"):
+            st.warning("Input langsung ke Google Sheets saja.")
 
-        with st.form("input_form", clear_on_submit=True):
-            col1, col2 = st.columns(2)
-            with col1:
-                tgl = st.date_input("Tanggal", datetime.date.today())
-                model = st.selectbox("Model", list_model)
-            with col2:
-                item = st.text_input("Nama/Kode Item")
-                proses = st.selectbox("Proses", list_proses)
-            jumlah = st.number_input("Jumlah OK", min_value=0)
-            
-            if st.form_submit_button("Simpan Data"):
-                st.warning("Mohon input data langsung di file Google Sheets agar tersimpan permanen.")
-
-# --- MENU MONITORING WIP ---
-elif menu == "📊 Monitoring WIP":
-    st.subheader("📊 Monitoring WIP")
-    df_wip = df[df["Proses"] != "Cek Point"]
-    st.dataframe(df_wip, width=1000)
-    st.table(df_wip.groupby("Proses")["Jumlah"].sum())
-
-# --- MENU DATA STOK ---
+# --- MENU STOK ---
 elif menu == "📦 Data Stok":
-    st.subheader("📦 Data Stok")
-    pilih_model = st.selectbox("Pilih Model", df_master[df_master.iloc[:,0]=="Model"].iloc[:,1].unique())
+    # Asumsi kolom: 0=Model, 1=Item, 2=Jumlah
+    m_col, i_col, q_col = df.columns[1], df.columns[2], df.columns[4]
+    d_col, dq_col = df_deliv.columns[0], df_deliv.columns[2]
     
-    # Filter Data
-    df_cek = df[(df["Proses"] == "Cek Point") & (df["Model"] == pilih_model)]
-    prod_ok = df_cek.groupby("Item")["Jumlah"].sum()
+    pilih_m = st.selectbox("Pilih Model", df[m_col].unique())
     
-    # Ambil kolom Delivery secara dinamis (Model, Item, Jumlah_Out)
-    deliv_filtered = df_deliv[df_deliv.iloc[:,0] == pilih_model]
-    deliv_out = deliv_filtered.groupby(df_deliv.columns[1])[df_deliv.columns[2]].sum()
+    # Hitung
+    prod = df[df[m_col] == pilih_m].groupby(i_col)[q_col].sum()
+    deliv = df_deliv[df_deliv[d_col] == pilih_m].groupby(df_deliv.columns[1])[dq_col].sum()
     
-    stok_final = pd.DataFrame({"Produksi": prod_ok, "Delivery": deliv_out}).fillna(0).astype(int)
-    stok_final["Sisa Stok"] = stok_final["Produksi"] - stok_final["Delivery"]
-    st.table(stok_final)
+    res = pd.DataFrame({"Produksi": prod, "Delivery": deliv}).fillna(0)
+    res["Sisa"] = res["Produksi"] - res["Delivery"]
+    st.table(res)
 
-# Tombol Refresh
-if st.sidebar.button("🔄 Refresh Data"):
+if st.sidebar.button("🔄 Refresh"):
     st.cache_data.clear()
     st.rerun()
