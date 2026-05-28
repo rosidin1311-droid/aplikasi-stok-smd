@@ -24,7 +24,7 @@ if menu == "📦 Data Stok":
     st.subheader("📦 Data Stok & Saldo")
     # Menggunakan editor agar bisa tambah/edit customer, model, item
     # Anda perlu memastikan kolom di sheets sudah memiliki header yang benar
-    edited_stok = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+    edited_stok = st.data_editor(df, num_rows="dynamic", width='stretch')
     st.download_button("📥 Download Stok", edited_stok.to_csv(index=False), "stok.csv")
 
 # --- MENU DELIVERY (TAMBAH KOLOM & EDIT) ---
@@ -76,7 +76,7 @@ if menu == "🏭 Input Produksi":
             qty = st.number_input("Jumlah OK", min_value=0)
             if st.form_submit_button("Simpan Data"):
                 st.success(f"Data {item} ({m}) berhasil diinput!")
-    edited_master = st.data_editor(df_master, num_rows="dynamic", use_container_width=True)
+    edited_master = st.data_editor(df_master, num_rows="dynamic", width='stretch')
     st.download_button("📥 Download Master", edited_master.to_csv(index=False), "master.csv")
 
 if st.sidebar.button("🔄 Refresh"): st.rerun()
