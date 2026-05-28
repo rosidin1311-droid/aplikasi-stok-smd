@@ -56,19 +56,41 @@ elif menu == "📊 Laporan WIP":
     edited_wip = st.data_editor(df[df.iloc[:, 3] != "Cek Point"], num_rows="dynamic", use_container_width=True)
     st.download_button("📥 Download WIP", edited_wip.to_csv(index=False), "wip.csv")
 
-# --- INPUT PRODUKSI ---
+# --- MENU INPUT PRODUKSI (PERBAIKAN) ---
 elif menu == "🏭 Input Produksi":
     st.subheader("🏭 Input Produksi")
-    with st.form("input"):
-        m = st.selectbox("Model", df_master[df_master.iloc[:,0] == 'Model'].iloc[:,1].unique())
-        p = st.selectbox("Proses", df_master[df_master.iloc[:,0] == 'Proses'].iloc[:,1].unique())
-        item = st.text_input("Nama Item")
-        cust = st.text_input("Customer")
-        qty = st.number_input("Jumlah", 0)
-        if st.form_submit_button("Simpan"):
-            st.success("Data berhasil masuk ke sistem.")
+    
+    # Pastikan df_master tidak kosong
+    if df_master.empty:
+        st.error("Data Master kosong! Silakan isi di menu Master Data.")
+    else:
+        # Mengambil daftar unik dengan penanganan error
+        try:
+            # Menggunakan .loc untuk memastikan akses kolom berdasarkan nama jika memungkinkan
+            # Jika kolom tidak bernama 'Kategori', kita tetap gunakan .iloc
+            model_list = df_master[df_master.iloc[:, 0] == "Model"].iloc[:, 1].dropna().unique().tolist()
+            proses_list = df_master[df_master.iloc[:, 0] == "Proses"].iloc[:, 1].dropna().unique().tolist()
+        except Exception:
+            model_list = ["Data tidak terbaca"]
+            proses_list = ["Data tidak terbaca"]
 
-elif menu == "⚙️ Master Data":
+        with st.form("input_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                # Tambahkan logika agar user bisa memilih jika data ada
+                m = st.selectbox("Pilih Model", model_list if model_list else ["Isi di Master Data"])
+                cust = st.text_input("Customer")
+            with col2:
+                p = st.selectbox("Pilih Proses", proses_list if proses_list else ["Isi di Master Data"])
+                item = st.text_input("Nama Item")
+            
+            qty = st.number_input("Jumlah OK", min_value=0)
+            
+            if st.form_submit_button("Simpan Data"):
+                if m == "Isi di Master Data" or p == "Isi di Master Data":
+                    st.error("Pilihan Model/Proses belum tersedia!")
+                else:
+                    st.success(f"Data {item} ({m}) berhasil diinput!")elif menu == "⚙️ Master Data":
     edited_master = st.data_editor(df_master, num_rows="dynamic", use_container_width=True)
     st.download_button("📥 Download Master", edited_master.to_csv(index=False), "master.csv")
 
