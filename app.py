@@ -18,19 +18,20 @@ URL_PROD = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmY
 URL_DELIV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?output=csv"
 URL_MASTER = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?output=csv"
 
-# --- 3. FUNGSI AMBIL DATA ---
+# --- FUNGSI AMBIL DATA (DITAMBAH DEBUG) ---
 @st.cache_data(ttl=60)
 def load_data(url):
     df = pd.read_csv(url)
-    # Jika sheet adalah Produksi, urutkan berdasarkan tanggal terbaru
-    if "Tanggal" in df.columns:
-        df["Tanggal"] = pd.to_datetime(df["Tanggal"])
-        df = df.sort_values(by="Tanggal", ascending=False)
+    df.columns = df.columns.str.strip() # Menghapus spasi di awal/akhir nama kolom
     return df
 
 df = load_data(URL_PROD)
 df_deliv = load_data(URL_DELIV)
 df_master = load_data(URL_MASTER)
+
+# --- DEBUG: TAMPILKAN KOLOM ---
+# Hapus tanda pagar (#) di bawah ini jika ingin melihat nama kolom yang terbaca di layar
+# st.write("Kolom Delivery terbaca:", df_deliv.columns.tolist())
 
 # --- 4. SIDEBAR NAVIGASI ---
 st.sidebar.title("NAVIGASI")
@@ -82,27 +83,27 @@ elif menu == "📊 Monitoring WIP":
 elif menu == "📦 Data Stok":
     st.subheader("📦 Data Stok")
     
-    # DEBUG: Menampilkan kolom apa saja yang terbaca oleh sistem
-    # st.write("Kolom yang terbaca di Master Data:", df_master.columns.tolist())
+    # Mengambil nama kolom secara dinamis (index 0=Model, 1=Item, 2=Jumlah_Out)
+    col_model_deliv = df_deliv.columns[0]
+    col_item_deliv = df_deliv.columns[1]
+    col_qty_deliv = df_deliv.columns[2] # Kolom ke-3 yang tadi error
     
-    # Kita gunakan cara aman (mengambil kolom pertama dan kedua tanpa peduli namanya)
-    # df_master.columns[0] = Kolom Kategori, df_master.columns[1] = Kolom Nama Data
-    col_kat = df_master.columns[0] 
+    col_kat = df_master.columns[0]
     col_val = df_master.columns[1]
     
-    # Filter Model menggunakan nama kolom dinamis
-    model_list = df_master[df_master[col_kat] == "Model"][col_val].unique()
+    pilih_model = st.selectbox("Pilih Model", df_master[df_master[col_kat]=="Model"][col_val].unique())
     
-    pilih_model = st.selectbox("Pilih Model", model_list)
-    
-    # Logika Stok
+    # Hitung Produksi
     df_cek = df[(df["Proses"] == "Cek Point") & (df["Model"] == pilih_model)]
     prod_ok = df_cek.groupby("Item")["Jumlah"].sum()
-    deliv_out = df_deliv[df_deliv["Model"] == pilih_model].groupby("Item")["Jumlah_Out"].sum()
+    
+    # Hitung Delivery (Menggunakan kolom dinamis)
+    deliv_filtered = df_deliv[df_deliv[col_model_deliv] == pilih_model]
+    deliv_out = deliv_filtered.groupby(col_item_deliv)[col_qty_deliv].sum()
     
     stok_final = pd.DataFrame({"Produksi": prod_ok, "Delivery": deliv_out}).fillna(0).astype(int)
     stok_final["Sisa Stok"] = stok_final["Produksi"] - stok_final["Delivery"]
-    st.dataframe(stok_final, width=None)
+    st.table(stok_final)
 
 # --- TOMBOL REFRESH ---
 if st.sidebar.button("🔄 Refresh Data"):
