@@ -1,82 +1,79 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Data Stok SMD", layout="wide")
+# Konfigurasi Tema Corduroy
+st.set_page_config(page_title="Corduroy System", layout="wide")
+st.markdown("""
+    <style>
+    .stApp { background-color: #FDF5E6; }
+    h1, h2, h3 { color: #5D4037; font-family: sans-serif; }
+    div[data-testid="stForm"] { background-color: #EDE0C6; border-radius: 10px; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# URL (Pastikan link publish CSV sudah benar)
-URLS = {
-    "PROD": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?gid=0&single=true&output=csv",
-    "DELIV": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?gid=955087734&single=true&output=csv",
-    "MASTER": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?gid=1449236361&single=true&output=csv"
-}
+# --- FUNGSI MOCKUP DATA (Simulasi Koneksi) ---
+def get_master():
+    # Ini nantinya load dari Google Sheets
+    return pd.DataFrame({
+        "Customer": ["PT A", "PT B"],
+        "Model": ["Axio", "Bolt"],
+        "Item": ["Bolt-A", "Bolt-B"],
+        "Alur": ["Cut,Sew,QC", "Cut,QC"]
+    })
 
-@st.cache_data(ttl=60)
-def load(url): return pd.read_csv(url)
+master_df = get_master()
 
-df = load(URLS["PROD"])
-df_deliv = load(URLS["DELIV"])
-df_master = load(URLS["MASTER"])
+# --- SIDEBAR ---
+menu = st.sidebar.radio("Navigasi", ["🏭 Input Produksi", "📦 Data Stok & Delivery", "⚙️ Master Data"])
 
-menu = st.sidebar.selectbox("Menu", ["🏭 Input Produksi", "📊 Laporan WIP", "📦 Data Stok", "🚚 Delivery", "⚙️ Master Data"])
+# --- 1. MASTER DATA ---
+if menu == "⚙️ Master Data":
+    st.subheader("⚙️ Setup Master Data")
+    edited_master = st.data_editor(master_df, num_rows="dynamic", use_container_width=True)
+    if st.download_button("📥 Download Master Data", edited_master.to_csv(index=False), "master.csv"):
+        st.success("Download berhasil!")
 
-# --- MENU DATA STOK (TAMBAH EDIT & KOLOM) ---
-if menu == "📦 Data Stok":
-    st.subheader("📦 Data Stok & Saldo")
-    # Menggunakan editor agar bisa tambah/edit customer, model, item
-    # Anda perlu memastikan kolom di sheets sudah memiliki header yang benar
-    edited_stok = st.data_editor(df, num_rows="dynamic", width='stretch')
-    st.download_button("📥 Download Stok", edited_stok.to_csv(index=False), "stok.csv")
-
-# --- MENU DELIVERY (TAMBAH KOLOM & EDIT) ---
-elif menu == "🚚 Delivery":
-    st.subheader("🚚 Management Delivery")
-    # Struktur: Tanggal, Model, Item, Stok_Ready, Jumlah_Out
-    # Jika df_deliv belum punya kolom ini, streamlit akan menyesuaikan
-    edited_deliv = st.data_editor(df_deliv, num_rows="dynamic", use_container_width=True)
+# --- 2. INPUT PRODUKSI ---
+elif menu == "🏭 Input Produksi":
+    st.subheader("🏭 Input Progres Produksi")
     
-    with st.expander("➕ Tambah Plan Delivery Baru"):
-        with st.form("add_deliv"):
-            col1, col2 = st.columns(2)
-            with col1:
-                tgl = st.date_input("Tanggal")
-                model = st.selectbox("Model", df_master.iloc[:,1].unique())
-            with col2:
-                item = st.text_input("Item")
-                stok_ready = st.number_input("Stok Ready", 0)
-                qty_out = st.number_input("Jumlah Out", 0)
-            
-            if st.form_submit_button("Simpan Plan"):
-                st.success("Plan berhasil ditambah ke tabel!")
-    
-    st.download_button("📥 Download Delivery", edited_deliv.to_csv(index=False), "delivery.csv")
-
-# --- MENU WIP ---
-elif menu == "📊 Laporan WIP":
-    st.subheader("📊 Monitoring WIP")
-    edited_wip = st.data_editor(df[df.iloc[:, 3] != "Cek Point"], num_rows="dynamic", use_container_width=True)
-    st.download_button("📥 Download WIP", edited_wip.to_csv(index=False), "wip.csv")
-
-# --- MENU INPUT PRODUKSI ---
-if menu == "🏭 Input Produksi":
-    st.subheader("🏭 Input Produksi")
-    if df_master.empty:
-        st.error("Data Master kosong!")
-    else:
-        model_list = df_master[df_master.iloc[:, 0] == "Model"].iloc[:, 1].dropna().unique().tolist()
-        proses_list = df_master[df_master.iloc[:, 0] == "Proses"].iloc[:, 1].dropna().unique().tolist()
+    with st.form("input_prod"):
+        col1, col2 = st.columns(2)
+        # Menghubungkan dropdown dengan Master Data
+        cust = col1.selectbox("Pilih Customer", master_df["Customer"].unique())
+        model = col1.selectbox("Pilih Model", master_df[master_df["Customer"]==cust]["Model"].unique())
+        item = col2.selectbox("Pilih Item", master_df[master_df["Model"]==model]["Item"].unique())
+        proses = col2.selectbox("Proses", ["Cut", "Sew", "QC"])
+        qty = st.number_input("Jumlah OK", min_value=0)
         
-        with st.form("input_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                m = st.selectbox("Pilih Model", model_list if model_list else ["Isi Master"])
-                cust = st.text_input("Customer")
-            with col2:
-                p = st.selectbox("Pilih Proses", proses_list if proses_list else ["Isi Master"])
-                item = st.text_input("Nama Item")
-            qty = st.number_input("Jumlah OK", min_value=0)
-            if st.form_submit_button("Simpan Data"):
-                st.success(f"Data {item} ({m}) berhasil diinput!")
-    edited_master = st.data_editor(df_master, num_rows="dynamic", width='stretch')
-    st.download_button("📥 Download Master", edited_master.to_csv(index=False), "master.csv")
+        if st.form_submit_button("Simpan Progress"):
+            st.success(f"Berhasil mencatat {qty} pcs untuk {item}")
 
-if st.sidebar.button("🔄 Refresh"): st.rerun()
+# --- 3. DATA STOK & DELIVERY ---
+elif menu == "📦 Data Stok & Delivery":
+    st.subheader("📦 Inventory & Plan Delivery")
+    
+    # Bagian Data Stok
+    st.markdown("### Saldo Stok")
+    stok_df = pd.DataFrame({"Customer": ["PT A"], "Model": ["Axio"], "Item": ["Bolt-A"], "Stok": [100]})
+    edited_stok = st.data_editor(stok_df, use_container_width=True)
+    st.download_button("📥 Download Stok", edited_stok.to_csv(index=False), "stok.csv")
+    
+    st.divider()
+    
+    # Bagian Delivery (Terhubung dengan Master Data)
+    st.markdown("### Plan Delivery")
+    with st.form("add_deliv"):
+        c1, c2 = st.columns(2)
+        cust_deliv = c1.selectbox("Customer (Ref Master)", master_df["Customer"].unique())
+        model_deliv = c1.selectbox("Model (Ref Master)", master_df[master_df["Customer"]==cust_deliv]["Model"].unique())
+        item_deliv = c2.selectbox("Item (Ref Master)", master_df[master_df["Model"]==model_deliv]["Item"].unique())
+        tgl = c2.date_input("Tanggal Kirim")
+        
+        if st.form_submit_button("Tambah ke List Delivery"):
+            st.info(f"Rencana kirim {item_deliv} untuk {cust_deliv} ditambahkan.")
+            
+    # Tabel Delivery
+    deliv_df = pd.DataFrame({"Tanggal": ["2026-06-01"], "Customer": ["PT A"], "Item": ["Bolt-A"], "Qty": [50], "Status": ["Pending"]})
+    edited_deliv = st.data_editor(deliv_df, use_container_width=True)
+    st.download_button("📥 Download Delivery", edited_deliv.to_csv(index=False), "delivery.csv")
