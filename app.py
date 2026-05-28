@@ -52,17 +52,31 @@ if menu == "⚙️ Master Data":
 # --- MENU INPUT PRODUKSI ---
 elif menu == "🏭 Input Produksi":
     st.subheader("🏭 Form Input")
-    with st.form("input_form", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            tgl = st.date_input("Tanggal", datetime.date.today())
-            model = st.selectbox("Model", df_master[df_master.iloc[:,0]=="Model"].iloc[:,1].unique())
-        with col2:
-            item = st.text_input("Nama/Kode Item")
-            proses = st.selectbox("Proses", df_master[df_master.iloc[:,0]=="Proses"].iloc[:,1].unique())
-        jumlah = st.number_input("Jumlah OK", min_value=0)
-        if st.form_submit_button("Simpan Data"):
-            st.warning("Mohon input data langsung di file Google Sheets untuk tersimpan permanen.")
+    
+    # Memastikan data master tidak kosong sebelum dipakai
+    if df_master.empty:
+        st.error("Data Master belum terbaca. Pastikan Google Sheet Master terisi.")
+    else:
+        # Mengambil daftar dari kolom berdasarkan index (Kolom 0: Kategori, Kolom 1: Nama Data)
+        list_model = df_master[df_master.iloc[:,0] == "Model"].iloc[:,1].unique().tolist()
+        list_proses = df_master[df_master.iloc[:,0] == "Proses"].iloc[:,1].unique().tolist()
+        
+        # Tambahkan kondisi jika list kosong
+        if not list_model: list_model = ["Data tidak ditemukan"]
+        if not list_proses: list_proses = ["Data tidak ditemukan"]
+
+        with st.form("input_form", clear_on_submit=True):
+            col1, col2 = st.columns(2)
+            with col1:
+                tgl = st.date_input("Tanggal", datetime.date.today())
+                model = st.selectbox("Model", list_model)
+            with col2:
+                item = st.text_input("Nama/Kode Item")
+                proses = st.selectbox("Proses", list_proses)
+            jumlah = st.number_input("Jumlah OK", min_value=0)
+            
+            if st.form_submit_button("Simpan Data"):
+                st.warning("Mohon input data langsung di file Google Sheets agar tersimpan permanen.")
 
 # --- MENU MONITORING WIP ---
 elif menu == "📊 Monitoring WIP":
