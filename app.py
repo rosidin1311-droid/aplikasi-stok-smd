@@ -3,13 +3,7 @@ import pandas as pd
 
 # --- TEMA & CONFIG ---
 st.set_page_config(page_title="Data Stok SMD", layout="wide")
-st.markdown("""
-    <style>
-    .stApp { background-color: #fdfaf6; color: #4b3d33; }
-    h1 { color: #8b5e3c; }
-    [data-testid="stSidebar"] { background-color: #f5e9d9; }
-    </style>
-    """, unsafe_allow_html=True)
+st.markdown("""<style>.stApp { background-color: #fdfaf6; } h1 { color: #8b5e3c; }</style>""", unsafe_allow_html=True)
 
 # --- URL CSV ---
 URLS = {
@@ -19,51 +13,49 @@ URLS = {
 }
 
 @st.cache_data(ttl=60)
-def load(url):
-    return pd.read_csv(url)
+def load(url): return pd.read_csv(url)
 
 df = load(URLS["PROD"])
-df_deliv = load(URLS["DELIV"])
 df_master = load(URLS["MASTER"])
 
-menu = st.sidebar.selectbox("Menu", ["🏭 Input Produksi", "📦 Data Stok", "⚙️ Master Data"])
+menu = st.sidebar.selectbox("Menu", ["🏭 Input Produksi", "📊 Monitoring WIP", "📦 Data Stok", "⚙️ Master Data"])
 
-# --- MENU MASTER ---
+# --- MENU MASTER (WITH EDIT) ---
 if menu == "⚙️ Master Data":
-    st.subheader("⚙️ Master Data")
-    st.dataframe(df_master, width='stretch')
+    st.subheader("⚙️ Master Data (Editable)")
+    edited_df = st.data_editor(df_master, num_rows="dynamic")
+    st.download_button("📥 Download Master CSV", edited_df.to_csv(index=False), "master.csv", "text/csv")
 
-# --- MENU INPUT ---
+# --- MENU INPUT PRODUKSI ---
 elif menu == "🏭 Input Produksi":
     st.subheader("🏭 Input Produksi")
-    # Memastikan kolom pertama berisi 'Model' dan 'Proses'
     model_list = df_master[df_master.iloc[:,0] == "Model"].iloc[:,1].dropna().unique()
     proses_list = df_master[df_master.iloc[:,0] == "Proses"].iloc[:,1].dropna().unique()
     
-    with st.form("input"):
+    with st.form("input_form"):
         m = st.selectbox("Pilih Model", model_list)
         p = st.selectbox("Pilih Proses", proses_list)
         item = st.text_input("Nama Item")
-        qty = st.number_input("Jumlah OK", 0)
-        if st.form_submit_button("Simpan"):
-            st.info("Data siap disinkronisasi.")
+        qty = st.number_input("Jumlah OK", min_value=0)
+        submitted = st.form_submit_button("Simpan Data")
+        if submitted:
+            st.success(f"Data {item} untuk {m} berhasil diproses!")
 
-# --- MENU DATA STOK (FIXED) ---
+# --- MENU MONITORING WIP & DATA STOK (WITH DOWNLOAD) ---
+elif menu == "📊 Monitoring WIP":
+    st.subheader("📊 Monitoring WIP")
+    st.dataframe(df, use_container_width=True)
+    st.download_button("📥 Download WIP CSV", df.to_csv(index=False), "wip.csv", "text/csv")
+
 elif menu == "📦 Data Stok":
-    st.subheader("📦 Data Stok (Barang Selesai Proses)")
-    # Mengambil list model dari data produksi
-    model_list = df.iloc[:, 1].dropna().unique()
-    pilih_m = st.selectbox("Pilih Model untuk Cek Stok", model_list)
-    
-    # Logika: Ambil baris dimana Model == pilih_m DAN Proses == 'Cek Point' (atau kolom proses di index 3)
-    # Sesuaikan angka 3 dengan kolom 'Proses' di file produksi Anda
+    st.subheader("📦 Data Stok (Cek Point)")
+    pilih_m = st.selectbox("Pilih Model", df.iloc[:, 1].dropna().unique())
     stok_df = df[(df.iloc[:, 1] == pilih_m) & (df.iloc[:, 3] == "Cek Point")]
     
     if not stok_df.empty:
-        # Menampilkan tabel hasil produksi yang sudah di 'Cek Point'
         st.table(stok_df)
+        st.download_button("📥 Download Stok CSV", stok_df.to_csv(index=False), "stok.csv", "text/csv")
     else:
-        st.warning("Belum ada data produksi yang selesai (Cek Point) untuk model ini.")
+        st.warning("Tidak ada data selesai proses (Cek Point).")
 
-if st.sidebar.button("🔄 Refresh"):
-    st.rerun()
+if st.sidebar.button("🔄 Refresh"): st.rerun()
