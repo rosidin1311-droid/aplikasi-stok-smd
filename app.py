@@ -30,7 +30,7 @@ def load_data(url):
 # --- SIDEBAR ---
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2716/2716057.png", width=80)
-    st.title("Corduroy System")
+    st.title("Aplikasi Data Stok Tae Won")
     menu = st.radio("Navigasi", ["📊 Dashboard", "🚚 Delivery", "⚙️ Master Data", "➕ Input Produksi", "📤 Input Delivery"])
     st.markdown("---")
     if st.button("🔄 Refresh Data"):
