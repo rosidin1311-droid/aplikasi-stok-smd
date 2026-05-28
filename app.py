@@ -62,7 +62,7 @@ st.divider()
 if menu == "📊 Dashboard":
     df_stok = load_data(URL_STOK)
     if not df_stok.empty:
-        st.dataframe(df_stok, width=None)
+        st.dataframe(df_stok, width=1000)
         csv = df_stok.to_csv(index=False)
         st.download_button("📥 Download Laporan", csv, "laporan_stok.csv")
     else:
@@ -71,13 +71,13 @@ if menu == "📊 Dashboard":
 elif menu == "🚚 Delivery":
     df_deliv = load_data(URL_DELIVERY)
     if not df_deliv.empty:
-        st.dataframe(df_deliv, width=None)
+        st.dataframe(df_deliv, width=1000)
     else:
         st.info("Belum ada data pengiriman.")
 
 elif menu == "⚙️ Master Data":
     df_master = load_data(URL_MASTER)
-    st.dataframe(df_master, width=None)
+    st.dataframe(df_master, width=1000)
 
 elif "Input" in menu:
     link = "https://docs.google.com/forms/d/e/1FAIpQLScl4iEwLtHHDIsbqqRnhgxlwg90-10HjQEQwEf4FQp8nL7eMg/viewform" if "Produksi" in menu else "https://docs.google.com/forms/d/e/1FAIpQLSf_F65fJlF9vkcquLgQvjUhJ2Yprbb9WvmF896UtTE5IZXbMg/viewform"
