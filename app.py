@@ -46,7 +46,7 @@ if menu == "📊 Laporan WIP":
     wip_df = df[df.iloc[:, 3] != "Cek Point"].copy()
     
     st.write("Edit data WIP di bawah jika ada barang yang belum terinput:")
-    edited_wip = st.data_editor(wip_df, use_container_width=True)
+    edited_wip = st.data_editor(wip_df, width='stretch')
     
     # Logika Otomatis: Ringkasan WIP per Proses
     st.subheader("Ringkasan Saldo per Proses")
@@ -88,7 +88,7 @@ elif menu == "🏭 Input Produksi":
             st.success("Data telah masuk ke sistem WIP.")
 
 elif menu == "⚙️ Master Data":
-    edited_master = st.data_editor(df_master, use_container_width=True)
+    edited_master = st.data_editor(df_master, width='stretch')
     st.download_button("📥 Download Master", edited_master.to_csv(index=False), "master.csv")
 
 if st.sidebar.button("🔄 Refresh"): st.rerun()
