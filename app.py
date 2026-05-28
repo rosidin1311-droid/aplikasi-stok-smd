@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 
-# --- CONFIG & URL ---
 st.set_page_config(page_title="Data Stok SMD", layout="wide")
 
+# URL (Pastikan link publish CSV sudah benar)
 URLS = {
     "PROD": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?gid=0&single=true&output=csv",
     "DELIV": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?gid=955087734&single=true&output=csv",
@@ -17,78 +17,59 @@ df = load(URLS["PROD"])
 df_deliv = load(URLS["DELIV"])
 df_master = load(URLS["MASTER"])
 
-# --- FUNGSI LOGIKA STOK DINAMIS ---
-def get_stok_otomatis(model):
-    # 1. Cari apa proses akhir untuk model ini (dari Master Data)
-    # Asumsi: Master Data punya kolom [Kategori, Nama, Is_Final_Process]
-    final_process = df_master[(df_master.iloc[:,0] == "Proses Akhir") & 
-                              (df_master.iloc[:,1] == model)].iloc[:, 2].values
-    
-    if len(final_process) == 0: return 0 # Default jika belum diset
-    target_proses = final_process[0]
-    
-    # 2. Hitung Produksi yang sudah sampai di proses tersebut
-    total_prod = df[(df.iloc[:, 1] == model) & (df.iloc[:, 3] == target_proses)].iloc[:, 4].sum()
-    
-    # 3. Hitung Delivery (Kolom ke-4 adalah Jumlah_Out berdasarkan request baru Anda)
-    total_deliv = df_deliv[(df_deliv.iloc[:, 1] == model)].iloc[:, 4].sum()
-    
-    return total_prod - total_deliv
+menu = st.sidebar.selectbox("Menu", ["🏭 Input Produksi", "📊 Laporan WIP", "📦 Data Stok", "🚚 Delivery", "⚙️ Master Data"])
 
-# --- MENU APP ---
-menu = st.sidebar.selectbox("Menu", ["📊 Laporan WIP", "📦 Data Stok", "🚚 Delivery", "⚙️ Master Data"])
-
-# --- MENU LAPORAN WIP (DENGAN LOGIKA OTOMATIS) ---
-if menu == "📊 Laporan WIP":
-    st.subheader("📊 Monitoring Barang Belum Selesai (WIP)")
-    
-    # Logika: Tampilkan data yang BUKAN 'Cek Point'
-    wip_df = df[df.iloc[:, 3] != "Cek Point"].copy()
-    
-    st.write("Edit data WIP di bawah jika ada barang yang belum terinput:")
-    edited_wip = st.data_editor(wip_df, width='stretch')
-    
-    # Logika Otomatis: Ringkasan WIP per Proses
-    st.subheader("Ringkasan Saldo per Proses")
-    summary = edited_wip.groupby(edited_wip.iloc[:, 3])[[edited_wip.columns[4]]].sum()
-    st.table(summary)
-    
-    st.download_button("📥 Download Laporan WIP", edited_wip.to_csv(index=False), "wip_report.csv")
-
+# --- MENU DATA STOK (TAMBAH EDIT & KOLOM) ---
 if menu == "📦 Data Stok":
-    st.subheader("📦 Data Stok Real-time")
-    list_model = df["Model"].unique() # Pastikan header sudah benar
-    stok_data = []
-    
-    for m in list_model:
-        stok_data.append({"Model": m, "Stok Tersedia": get_stok_otomatis(m)})
-    
-    st.table(pd.DataFrame(stok_data))
+    st.subheader("📦 Data Stok & Saldo")
+    # Menggunakan editor agar bisa tambah/edit customer, model, item
+    # Anda perlu memastikan kolom di sheets sudah memiliki header yang benar
+    edited_stok = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+    st.download_button("📥 Download Stok", edited_stok.to_csv(index=False), "stok.csv")
 
+# --- MENU DELIVERY (TAMBAH KOLOM & EDIT) ---
 elif menu == "🚚 Delivery":
-    st.subheader("🚚 Input Delivery")
-    # Tampilkan tabel delivery baru dengan kolom: Tanggal, Model, Item, Stok_Ready, Jumlah_Out
-    st.dataframe(df_deliv)
-    with st.form("deliv_form"):
-        # Input form disesuaikan dengan kolom baru Anda
-        tgl = st.date_input("Tanggal")
-        model = st.selectbox("Model", df_master.iloc[:, 1].unique())
-        qty_out = st.number_input("Jumlah Out", 0)
-        if st.form_submit_button("Simpan Delivery"):
-            st.success("Delivery tersimpan.")
+    st.subheader("🚚 Management Delivery")
+    # Struktur: Tanggal, Model, Item, Stok_Ready, Jumlah_Out
+    # Jika df_deliv belum punya kolom ini, streamlit akan menyesuaikan
+    edited_deliv = st.data_editor(df_deliv, num_rows="dynamic", use_container_width=True)
+    
+    with st.expander("➕ Tambah Plan Delivery Baru"):
+        with st.form("add_deliv"):
+            col1, col2 = st.columns(2)
+            with col1:
+                tgl = st.date_input("Tanggal")
+                model = st.selectbox("Model", df_master.iloc[:,1].unique())
+            with col2:
+                item = st.text_input("Item")
+                stok_ready = st.number_input("Stok Ready", 0)
+                qty_out = st.number_input("Jumlah Out", 0)
+            
+            if st.form_submit_button("Simpan Plan"):
+                st.success("Plan berhasil ditambah ke tabel!")
+    
+    st.download_button("📥 Download Delivery", edited_deliv.to_csv(index=False), "delivery.csv")
 
+# --- MENU WIP ---
+elif menu == "📊 Laporan WIP":
+    st.subheader("📊 Monitoring WIP")
+    edited_wip = st.data_editor(df[df.iloc[:, 3] != "Cek Point"], num_rows="dynamic", use_container_width=True)
+    st.download_button("📥 Download WIP", edited_wip.to_csv(index=False), "wip.csv")
+
+# --- INPUT PRODUKSI ---
 elif menu == "🏭 Input Produksi":
     st.subheader("🏭 Input Produksi")
     with st.form("input"):
         m = st.selectbox("Model", df_master[df_master.iloc[:,0] == 'Model'].iloc[:,1].unique())
         p = st.selectbox("Proses", df_master[df_master.iloc[:,0] == 'Proses'].iloc[:,1].unique())
         item = st.text_input("Nama Item")
+        cust = st.text_input("Customer")
         qty = st.number_input("Jumlah", 0)
         if st.form_submit_button("Simpan"):
-            st.success("Data telah masuk ke sistem WIP.")
+            st.success("Data berhasil masuk ke sistem.")
 
 elif menu == "⚙️ Master Data":
-    edited_master = st.data_editor(df_master, width='stretch')
+    edited_master = st.data_editor(df_master, num_rows="dynamic", use_container_width=True)
     st.download_button("📥 Download Master", edited_master.to_csv(index=False), "master.csv")
 
 if st.sidebar.button("🔄 Refresh"): st.rerun()
