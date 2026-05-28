@@ -35,7 +35,7 @@ if menu == "📊 Dashboard Stok":
     st.subheader("📦 Monitoring Stok Ready")
     df_stok = load_data(URL_STOK)
     if not df_stok.empty:
-        st.dataframe(df_stok, use_container_width=True)
+        st.dataframe(df_stok, width='stretch')
         csv = df_stok.to_csv(index=False)
         st.download_button("📥 Download Laporan Stok", csv, "laporan_stok.csv")
     else:
@@ -45,24 +45,24 @@ elif menu == "🚚 Delivery Plan":
     st.subheader("🚚 Data Pengiriman")
     df_deliv = load_data(URL_DELIVERY)
     if not df_deliv.empty:
-        st.dataframe(df_deliv, use_container_width=True)
+        st.dataframe(df_deliv, width='stretch')
     else:
         st.info("Belum ada data pengiriman.")
 
 elif menu == "⚙️ Master Data":
     st.subheader("⚙️ Master Data Referensi")
     df_master = load_data(URL_MASTER)
-    st.dataframe(df_master, use_container_width=True)
+    st.dataframe(df_master, width='stretch')
 
 elif menu == "➕ Input Produksi":
     st.subheader("🏭 Input Produksi")
     st.info("Gunakan form di bawah untuk mencatat hasil produksi harian.")
-    st.link_button("✍️ Buka Form Input Produksi", "PASTE_LINK_GOOGLE_FORM_PRODUKSI_ANDA")
+    st.link_button("✍️ Buka Form Input Produksi", "https://docs.google.com/forms/d/e/1FAIpQLScl4iEwLtHHDIsbqqRnhgxlwg90-10HjQEQwEf4FQp8nL7eMg/viewform")
 
 elif menu == "📤 Input Delivery":
     st.subheader("📤 Input Delivery")
     st.info("Gunakan form di bawah untuk mencatat pengiriman barang.")
-    st.link_button("✍️ Buka Form Input Delivery", "PASTE_LINK_GOOGLE_FORM_DELIVERY_ANDA")
+    st.link_button("✍️ Buka Form Input Delivery", "https://docs.google.com/forms/d/e/1FAIpQLSf_F65fJlF9vkcquLgQvjUhJ2Yprbb9WvmF896UtTE5IZXbMg/viewform")
 
 # Tombol Refresh
 st.sidebar.markdown("---")
