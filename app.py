@@ -34,7 +34,7 @@ with st.sidebar:
     st.divider()
     
     # Navigasi Modern
-    menu = st.segmented_control(
+    menu = st.navigation(
         "Menu Utama",
         options=["📊 Dashboard", "🚚 Delivery", "⚙️ Master Data", "➕ Input Produksi", "📤 Input Delivery"],
         selection_mode="single",
