@@ -9,9 +9,9 @@ st.set_page_config(page_title="Data Stok Samindo", layout="wide")
 # 1. Buka Sheet > File > Share > Publish to web
 # 2. Pilih format: "Comma-separated values (.csv)"
 # 3. Copy link yang muncul
-URL_PRODUKSI = "https://docs.google.com/spreadsheets/d/1fUlZzcHCHNgUYDwgvgcrn2e5B46HuWiREMIvQ_G1o28/edit?gid=0#gid=0"
-URL_DELIVERY = "https://docs.google.com/spreadsheets/d/1fUlZzcHCHNgUYDwgvgcrn2e5B46HuWiREMIvQ_G1o28/edit?gid=955087734#gid=955087734"
-URL_MASTER = "https://docs.google.com/spreadsheets/d/1fUlZzcHCHNgUYDwgvgcrn2e5B46HuWiREMIvQ_G1o28/edit?gid=1449236361#gid=1449236361"
+URL_PRODUKSI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pubhtml"
+URL_DELIVERY = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pubhtml"
+URL_MASTER = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pubhtml"
 
 # --- FUNGSI DATA ---
 @st.cache_data(ttl=60)
