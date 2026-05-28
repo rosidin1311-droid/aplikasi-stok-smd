@@ -31,14 +31,14 @@ menu = st.sidebar.selectbox("Menu", ["🏭 Input Produksi", "📦 Data Stok", "�
 # --- MENU MASTER ---
 if menu == "⚙️ Master Data":
     st.subheader("⚙️ Master Data")
-    st.dataframe(df_master, use_container_width=True)
+    st.dataframe(df_master, width='stretch')
 
 # --- MENU INPUT ---
 elif menu == "🏭 Input Produksi":
     st.subheader("🏭 Input Produksi")
     # Memastikan kolom pertama berisi 'Model' dan 'Proses'
-    model_list = df_master[df_master.iloc[:,0] == "Model"].iloc[:,1].dropna().unique()
-    proses_list = df_master[df_master.iloc[:,0] == "Proses"].iloc[:,1].dropna().unique()
+    model_list = df_master_data[df_master.iloc[:,0] == "Model"].iloc[:,1].dropna().unique()
+    proses_list = df_master_data[df_master.iloc[:,0] == "Proses"].iloc[:,1].dropna().unique()
     
     with st.form("input"):
         m = st.selectbox("Pilih Model", model_list)
