@@ -44,19 +44,34 @@ if menu == "⚙️ Master Data":
     st.subheader("⚙️ Master Data")
     st.dataframe(df_master, use_container_width=True)
 
+# --- 6. LOGIKA MENU INPUT PRODUKSI (DIPERBAIKI) ---
 elif menu == "🏭 Input Produksi":
     st.subheader("🏭 Form Input Hasil Produksi")
+    
+    # Cek apakah kolom yang dibutuhkan ada
+    if "Kategori" in df_master.columns and "Nama_Data" in df_master.columns:
+        list_model = df_master[df_master["Kategori"] == "Model"]["Nama_Data"].unique().tolist()
+        list_proses = df_master[df_master["Kategori"] == "Proses"]["Nama_Data"].unique().tolist()
+    else:
+        list_model = []
+        list_proses = []
+        st.error("Error: Pastikan Google Sheets 'master_data' memiliki kolom 'Kategori' dan 'Nama_Data'.")
+
     with st.form("input_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
             tgl = st.date_input("Tanggal", datetime.date.today())
-            model = st.selectbox("Model", df_master[df_master["Kategori"]=="Model"]["Nama_Data"].unique())
+            model = st.selectbox("Model", list_model)
         with col2:
             item = st.text_input("Nama/Kode Item")
-            proses = st.selectbox("Proses", df_master[df_master["Kategori"]=="Proses"]["Nama_Data"].unique())
+            proses = st.selectbox("Proses", list_proses)
         jumlah = st.number_input("Jumlah OK", min_value=0)
-        if st.form_submit_button("Simpan Data (Manual)"):
-            st.warning("Karena menggunakan CSV, harap input data langsung ke Google Sheets agar tersimpan permanen.")
+        
+        # INI TOMBOL SUBMIT YANG TADI KURANG
+        submit = st.form_submit_button("Simpan Data")
+        
+        if submit:
+            st.warning("Karena menggunakan CSV, harap input data langsung di Google Sheets Anda.")
 
 elif menu == "📊 Monitoring WIP":
     st.subheader("📊 Monitoring WIP")
