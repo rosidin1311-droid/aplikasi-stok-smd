@@ -81,14 +81,28 @@ elif menu == "📊 Monitoring WIP":
 
 elif menu == "📦 Data Stok":
     st.subheader("📦 Data Stok")
-    pilih_model = st.selectbox("Pilih Model", df_master[df_master["Kategori"]=="Model"]["Nama_Data"].unique())
+    
+    # DEBUG: Menampilkan kolom apa saja yang terbaca oleh sistem
+    # st.write("Kolom yang terbaca di Master Data:", df_master.columns.tolist())
+    
+    # Kita gunakan cara aman (mengambil kolom pertama dan kedua tanpa peduli namanya)
+    # df_master.columns[0] = Kolom Kategori, df_master.columns[1] = Kolom Nama Data
+    col_kat = df_master.columns[0] 
+    col_val = df_master.columns[1]
+    
+    # Filter Model menggunakan nama kolom dinamis
+    model_list = df_master[df_master[col_kat] == "Model"][col_val].unique()
+    
+    pilih_model = st.selectbox("Pilih Model", model_list)
+    
+    # Logika Stok
     df_cek = df[(df["Proses"] == "Cek Point") & (df["Model"] == pilih_model)]
     prod_ok = df_cek.groupby("Item")["Jumlah"].sum()
     deliv_out = df_deliv[df_deliv["Model"] == pilih_model].groupby("Item")["Jumlah_Out"].sum()
     
     stok_final = pd.DataFrame({"Produksi": prod_ok, "Delivery": deliv_out}).fillna(0).astype(int)
     stok_final["Sisa Stok"] = stok_final["Produksi"] - stok_final["Delivery"]
-    st.table(stok_final)
+    st.dataframe(stok_final, width=None)
 
 # --- TOMBOL REFRESH ---
 if st.sidebar.button("🔄 Refresh Data"):
