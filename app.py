@@ -42,7 +42,7 @@ st.divider()
 # --- 5. LOGIKA MENU ---
 if menu == "⚙️ Master Data":
     st.subheader("⚙️ Master Data")
-    st.dataframe(df_master, use_container_width=True)
+    st.dataframe(df_master, width='stretch')
 
 # --- 6. LOGIKA MENU INPUT PRODUKSI (DIPERBAIKI) ---
 elif menu == "🏭 Input Produksi":
@@ -55,7 +55,7 @@ elif menu == "🏭 Input Produksi":
     else:
         list_model = []
         list_proses = []
-        st.error("Error: Pastikan Google Sheets 'master_data' memiliki kolom 'Kategori' dan 'Nama_Data'.")
+        
 
     with st.form("input_form", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -76,7 +76,7 @@ elif menu == "🏭 Input Produksi":
 elif menu == "📊 Monitoring WIP":
     st.subheader("📊 Monitoring WIP")
     df_wip = df[df["Proses"] != "Cek Point"]
-    st.dataframe(df_wip, use_container_width=True)
+    st.dataframe(df_wip, width='stretch')
     st.table(df_wip.groupby("Proses")["Jumlah"].sum())
 
 elif menu == "📦 Data Stok":
