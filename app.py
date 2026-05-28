@@ -21,9 +21,14 @@ URL_MASTER = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DK
 # --- 3. FUNGSI AMBIL DATA ---
 @st.cache_data(ttl=60)
 def load_data(url):
-    df = pd.read_csv(url)
-    df.columns = df.columns.str.strip() # Bersihkan spasi di header
-    return df
+    try:
+        # Menambahkan parameter agar lebih toleran terhadap format file
+        df = pd.read_csv(url, on_bad_lines='skip', engine='python')
+        df.columns = df.columns.str.strip()
+        return df
+    except Exception as e:
+        st.error(f"Terjadi kesalahan saat membaca CSV: {e}")
+        return pd.DataFrame() # Mengembalikan dataframe kosong agar aplikasi tidak mati
 
 # Ambil data
 df = load_data(URL_PROD)
