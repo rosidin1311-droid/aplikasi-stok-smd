@@ -47,7 +47,7 @@ if menu == "📊 Dashboard":
         col1.metric("Total SKU", len(df_stok))
         col2.metric("Status", "Up to Date")
         
-        st.dataframe(df_stok, width=none)
+        st.dataframe(df_stok, width=1000)
         csv = df_stok.to_csv(index=False)
         st.download_button("📥 Download Laporan Stok", csv, "laporan_stok.csv")
     else:
@@ -57,14 +57,14 @@ elif menu == "🚚 Delivery":
     st.title("🚚 Delivery Plan")
     df_deliv = load_data(URL_DELIVERY)
     if not df_deliv.empty:
-        st.dataframe(df_deliv, width=none)
+        st.dataframe(df_deliv, width=1000)
     else:
         st.info("Belum ada data pengiriman.")
 
 elif menu == "⚙️ Master Data":
     st.title("⚙️ Master Data")
     df_master = load_data(URL_MASTER)
-    st.dataframe(df_master, width=none)
+    st.dataframe(df_master, width=1000)
 
 elif "Input" in menu:
     st.title(f"{menu}")
