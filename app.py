@@ -15,7 +15,6 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- FUNGSI KONEKSI ---
-# Menggunakan cache_resource agar koneksi tidak dibuat ulang setiap saat
 @st.cache_resource
 def get_connection():
     return st.connection("gsheets", type=GSheetsConnection)
@@ -23,13 +22,18 @@ def get_connection():
 conn = get_connection()
 
 # --- FUNGSI DATA ---
-@st.cache_data(ttl=60) # Data di-refresh setiap 60 detik
+@st.cache_data(ttl=60) 
 def load_all_data():
+    # Mengambil data dari sheets
+    prod_df = conn.read(worksheet="produksi", usecols=list(range(5)), ttl=0)
+    
+    # LOGIKA PENGURUTAN DIPERBAIKI DI SINI
+    prod_df["Tanggal"] = pd.to_datetime(prod_df["Tanggal"])
+    prod_df = prod_df.sort_values(by="Tanggal", ascending=False)
+    
     return {
-        "produksi": conn.read(worksheet="produksi", usecols=list(range(5)), ttl=0),
-         produksi_df["Tanggal"] = pd.to_datetime(produksi_df["Tanggal"])
-         produksi_df = produksi_df.sort_values(by="Tanggal", ascending=False)
-    	"delivery": conn.read(worksheet="delivery", usecols=list(range(4)), ttl=0),
+        "produksi": prod_df,
+        "delivery": conn.read(worksheet="delivery", usecols=list(range(4)), ttl=0),
         "master": conn.read(worksheet="master_data", usecols=list(range(2)), ttl=0)
     }
 
