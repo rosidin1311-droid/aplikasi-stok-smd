@@ -2,33 +2,80 @@ import streamlit as st
 import pandas as pd
 import datetime
 
-# --- KONFIGURASI ---
-st.set_page_config(page_title="Data Stok Samindo", layout="wide")
+# --- 1. KONFIGURASI TEMA CORDUROY ---
+st.set_page_config(page_title="Data Stok SMD & IKEA", page_icon="🏭", layout="wide")
+st.markdown("""
+    <style>
+    .stApp { background-color: #fdfaf6; color: #4b3d33; }
+    h1, h2, h3 { color: #8b5e3c !important; }
+    div.stButton > button { background-color: #d2b48c; color: white; border: none; border-radius: 6px; font-weight: bold; }
+    [data-testid="stSidebar"] { background-color: #f5e9d9; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# Ganti URL ini dengan link "Publish to web" (CSV) dari Google Sheets Anda
-# 1. Buka Sheet > File > Share > Publish to web
-# 2. Pilih format: "Comma-separated values (.csv)"
-# 3. Copy link yang muncul
-URL_PRODUKSI = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?output=csv"
-URL_DELIVERY = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?output=csv"
+# --- 2. URL CSV (GANTI DENGAN LINK PUBLISH TO WEB ANDA) ---
+URL_PROD = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?output=csv"
+URL_DELIV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?output=csv"
 URL_MASTER = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSxAA8vyucxniOE_DKmYp6LmnxOw6EO676Xp0iEaOeKX7BKeVa2aVvOabU2Quf1Mccqsk8QUIh0UN-Q/pub?output=csv"
 
-# --- FUNGSI DATA ---
+# --- 3. FUNGSI AMBIL DATA ---
 @st.cache_data(ttl=60)
 def load_data(url):
     df = pd.read_csv(url)
+    # Jika sheet adalah Produksi, urutkan berdasarkan tanggal terbaru
+    if "Tanggal" in df.columns:
+        df["Tanggal"] = pd.to_datetime(df["Tanggal"])
+        df = df.sort_values(by="Tanggal", ascending=False)
     return df
 
-# Memuat data
-df = load_data(URL_PRODUKSI)
-df_deliv = load_data(URL_DELIVERY)
+df = load_data(URL_PROD)
+df_deliv = load_data(URL_DELIV)
 df_master = load_data(URL_MASTER)
 
-# --- TAMPILAN ---
-st.title("🏭 APLIKASI DATA STOK SAMINDO")
-menu = st.sidebar.selectbox("Menu", ["📊 Monitoring WIP", "📦 Data Stok"])
+# --- 4. SIDEBAR NAVIGASI ---
+st.sidebar.title("NAVIGASI")
+menu = st.sidebar.selectbox("Pilih Menu", ["🏭 Input Produksi", "📊 Monitoring WIP", "📦 Data Stok", "⚙️ Master Data"])
 
-if menu == "📊 Monitoring WIP":
-    st.dataframe(df)
+st.title("🏭 APLIKASI DATA STOK SAMINDO")
+st.divider()
+
+# --- 5. LOGIKA MENU ---
+if menu == "⚙️ Master Data":
+    st.subheader("⚙️ Master Data")
+    st.dataframe(df_master, use_container_width=True)
+
+elif menu == "🏭 Input Produksi":
+    st.subheader("🏭 Form Input Hasil Produksi")
+    with st.form("input_form", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            tgl = st.date_input("Tanggal", datetime.date.today())
+            model = st.selectbox("Model", df_master[df_master["Kategori"]=="Model"]["Nama_Data"].unique())
+        with col2:
+            item = st.text_input("Nama/Kode Item")
+            proses = st.selectbox("Proses", df_master[df_master["Kategori"]=="Proses"]["Nama_Data"].unique())
+        jumlah = st.number_input("Jumlah OK", min_value=0)
+        if st.form_submit_button("Simpan Data (Manual)"):
+            st.warning("Karena menggunakan CSV, harap input data langsung ke Google Sheets agar tersimpan permanen.")
+
+elif menu == "📊 Monitoring WIP":
+    st.subheader("📊 Monitoring WIP")
+    df_wip = df[df["Proses"] != "Cek Point"]
+    st.dataframe(df_wip, use_container_width=True)
+    st.table(df_wip.groupby("Proses")["Jumlah"].sum())
+
 elif menu == "📦 Data Stok":
-    st.table(df.groupby("Model")["Jumlah"].sum())
+    st.subheader("📦 Data Stok")
+    pilih_model = st.selectbox("Pilih Model", df_master[df_master["Kategori"]=="Model"]["Nama_Data"].unique())
+    df_cek = df[(df["Proses"] == "Cek Point") & (df["Model"] == pilih_model)]
+    prod_ok = df_cek.groupby("Item")["Jumlah"].sum()
+    deliv_out = df_deliv[df_deliv["Model"] == pilih_model].groupby("Item")["Jumlah_Out"].sum()
+    
+    stok_final = pd.DataFrame({"Produksi": prod_ok, "Delivery": deliv_out}).fillna(0).astype(int)
+    stok_final["Sisa Stok"] = stok_final["Produksi"] - stok_final["Delivery"]
+    st.table(stok_final)
+
+# --- TOMBOL REFRESH ---
+if st.sidebar.button("🔄 Refresh Data"):
+    st.cache_data.clear()
+    st.rerun()
