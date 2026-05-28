@@ -29,8 +29,8 @@ def load_data(url):
 # --- SIDEBAR PROFESIONAL ---
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2716/2716057.png", width=60)
-    st.markdown("### **Corduroy System**")
-    st.caption("Aplikasi Data Stok Tae Won")
+    st.markdown("### **Aplikasi Data Stok**")
+    st.caption("Semangaaaaat Ayaaah")
     st.divider()
     
     # Navigasi Modern
